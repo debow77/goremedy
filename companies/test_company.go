@@ -5,7 +5,7 @@ import (
 	"log"
 )
 
-func main() {
+func Main() {
 	// Create a new RemedyClient
 	client, err := remedy.NewRemedyClient()
 	if err != nil {
