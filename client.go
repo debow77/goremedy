@@ -1,7 +1,7 @@
 package remedy
 
 import (
-	"goremedy"
+	"gorapid"
 )
 
 // RemedyClient represents the main client for all Remedy transactions
