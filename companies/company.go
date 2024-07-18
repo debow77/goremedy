@@ -3,11 +3,10 @@ package companies
 import (
 	"encoding/json"
 	"fmt"
+	"goremedy"
 	"net/url"
 	"strings"
 	"time"
-
-	"goremedy"
 )
 
 // Company represents a Remedy Company
