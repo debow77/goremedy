@@ -1,38 +1,26 @@
 package main
 
 import (
-	"fmt"
-	"log"
+    "fmt"
+    "log"
+    "goremedy"
 )
 
-func Main() {
-	// Create a new RemedyClient
-	client, err := remedy.NewRemedyClient()
-	if err != nil {
-		log.Fatalf("Error creating Remedy client: %v", err)
-	}
+func main() {
+    // Create a new RemedyClient
+    remedyClient, err := goremedy.NewRemedyClient()
+    if err != nil {
+        log.Fatalf("Failed to create RemedyClient: %v", err)
+    }
 
-	// Call Get method with no mnemonics (to get all companies)
-	companies, err := client.Companies.Get(nil)
-	if err != nil {
-		log.Fatalf("Error getting companies: %v", err)
-	}
+    // Call the Get method with a sample mnemonic
+    companies, err := remedyClient.Companies.Get([]string{"some mnemonic"})
+    if err != nil {
+        log.Fatalf("Error fetching companies: %v", err)
+    }
 
-	// Print the results
-	fmt.Printf("Found %d companies\n", len(companies))
-	for _, company := range companies {
-		fmt.Printf("Company: %s (Mnemonic: %s)\n", company.Name, company.Mnemonic)
-	}
-
-	// Test with specific mnemonics
-	mnemonics := []string{"CERN_CWIM"}
-	specificCompanies, err := client.Companies.Get(mnemonics)
-	if err != nil {
-		log.Fatalf("Error getting specific companies: %v", err)
-	}
-
-	fmt.Printf("\nFound %d specific companies\n", len(specificCompanies))
-	for _, company := range specificCompanies {
-		fmt.Printf("Company: %s (Mnemonic: %s)\n", company.Name, company.Mnemonic)
-	}
+    // Print the retrieved companies
+    for _, company := range companies {
+        fmt.Printf("ID: %s, Name: %s, Mnemonic: %s\n", company.ID, company.Name, company.Mnemonic)
+    }
 }
