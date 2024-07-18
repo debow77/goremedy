@@ -1,4 +1,4 @@
-package remedy
+package goremedy
 
 import (
 	"gorapid"
