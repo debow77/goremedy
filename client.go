@@ -1,98 +1,61 @@
-// package goremedy
-
-// import (
-// 	"goremedy/companies"
-
-// 	"github.cerner.com/OHAIFedAutoSre/gorapid"
-// )
-
-// type CompanyClientGroup = companies.CompanyClientGroup
-
-// // RemedyClientInterface defines the methods for RemedyClient
-// type RemedyClientInterface interface {
-// 	GetRapidClient() *gorapid.RapidClient
-// 	GetCompanyClientGroup() *CompanyClientGroup
-// }
-
-// // RemedyClient represents the main client for all Remedy transactions
-// type RemedyClient struct {
-// 	Companies   *CompanyClientGroup
-// 	rapidClient *gorapid.RapidClient
-// }
-
-// // NewRemedyClient creates a new RemedyClient instance
-// func NewRemedyClient() (*RemedyClient, error) {
-// 	rapidClient, err := gorapid.NewRapidClient()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	client := &RemedyClient{
-// 		rapidClient: rapidClient,
-// 	}
-
-// 	client.Companies = NewCompanyClientGroup(client)
-
-// 	return client, nil
-// }
-
-// // GetRapidClient returns the RapidClient
-// func (rc *RemedyClient) GetRapidClient() *gorapid.RapidClient {
-// 	return rc.rapidClient
-// }
-
-// // GetCompanyClientGroup returns the CompanyClientGroup
-// func (rc *RemedyClient) GetCompanyClientGroup() *CompanyClientGroup {
-// 	return rc.Companies
-// }
-
 package goremedy
 
 import (
-	"goremedy/companies"
+	"log"
+	"os"
+
+	"goremedy/ci"
+	"goremedy/company"
 
 	"github.cerner.com/OHAIFedAutoSre/gorapid"
 )
 
-type CompanyClientGroup interface {
-	Get(mnemonics []string) ([]*companies.Company, error)
-	GetCernerworks(mnemonics []string) ([]*companies.Company, error)
-}
-
-// RemedyClientInterface defines the methods for RemedyClient
 type RemedyClientInterface interface {
 	GetRapidClient() *gorapid.RapidClient
-	GetCompanyClientGroup() CompanyClientGroup
+	GetCompanyClientGroup() company.ClientGroup
+	GetCIClientGroup() ci.ClientGroup
 }
 
-// RemedyClient represents the main client for all Remedy transactions
 type RemedyClient struct {
-	Companies   CompanyClientGroup
-	rapidClient *gorapid.RapidClient
+	rapidClient        *gorapid.RapidClient
+	companyClientGroup company.ClientGroup
+	ciClientGroup      ci.ClientGroup
+	logger             *log.Logger
 }
 
-// NewRemedyClient creates a new RemedyClient instance
-func NewRemedyClient() (*RemedyClient, error) {
+type RemedyClientConfig struct {
+	Logger *log.Logger
+}
+
+func NewRemedyClient(config RemedyClientConfig) (*RemedyClient, error) {
 	rapidClient, err := gorapid.NewRapidClient()
 	if err != nil {
 		return nil, err
 	}
 
-	client := &RemedyClient{
-		rapidClient: rapidClient,
+	if config.Logger == nil {
+		config.Logger = log.New(os.Stdout, "RemedyClient: ", log.LstdFlags)
 	}
 
-	client.Companies = companies.NewCompanyClientGroup(client)
+	client := &RemedyClient{
+		rapidClient: rapidClient,
+		logger:      config.Logger,
+	}
+
+	client.companyClientGroup = company.NewClientGroup(client)
+	client.ciClientGroup = ci.NewClientGroup(client)
 
 	return client, nil
 }
 
-// GetRapidClient returns the RapidClient
 func (rc *RemedyClient) GetRapidClient() *gorapid.RapidClient {
 	return rc.rapidClient
 }
 
-// GetCompanyClientGroup returns the CompanyClientGroup
-func (rc *RemedyClient) GetCompanyClientGroup() CompanyClientGroup {
-	return rc.Companies
+func (rc *RemedyClient) GetCompanyClientGroup() company.ClientGroup {
+	return rc.companyClientGroup
+}
+
+func (rc *RemedyClient) GetCIClientGroup() ci.ClientGroup {
+	return rc.ciClientGroup
 }

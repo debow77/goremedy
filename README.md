@@ -1,1 +1,12 @@
-# goremedy
+	// GetComputerSystemById(id string) (*ConfigurationItem, error)
+	// ComputerSystemIsDeployed(fqdn string) (bool, error)
+	// GetBusinessServices(company, name string) ([]*ConfigurationItem, error)
+	// GetBusinessServiceByName(company, name string) (*ConfigurationItem, error)
+	// DomainHasUsage(company, domain, usage string) (bool, error)
+	// GetComputerSystemCompany(fqdn string) (string, error)
+	// GetComputerSystemMnemonic(fqdn string) (string, error)
+	// GetComputerSystemDomains(fqdn string) ([]*Relationship, error)
+	// GetComputerSystemGroups(fqdn string) ([]*Relationship, error)
+	// GetDomainSite(company, domain string) (string, error)
+	// GetComputerSystems(company string, queryFilters map[string]string) ([]*ConfigurationItem, error)
+	// RelateToCr(changeId, instanceId string) error
