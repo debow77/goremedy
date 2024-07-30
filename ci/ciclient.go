@@ -11,8 +11,11 @@ import (
 type ClientGroup interface {
 	GetDomains(company string) ([]*ConfigurationItem, error)
 	GetComputerSystemByFqdn(fqdn string) (*ConfigurationItem, error)
-	// GetComputerSystemById(id string) (*ConfigurationItem, error)
-	// ComputerSystemIsDeployed(fqdn string) (bool, error)
+	GetComputerSystemById(id string) (*ConfigurationItem, error)
+	ComputerSystemIsDeployed(fqdn string) (bool, error)
+	GetComputerSystems(company string, queryFilters ...map[string]string) ([]*Relationship, error)
+
+	// TODO: Complete the rest of the CI endpoints
 	// GetBusinessServices(company, name string) ([]*ConfigurationItem, error)
 	// GetBusinessServiceByName(company, name string) (*ConfigurationItem, error)
 	// DomainHasUsage(company, domain, usage string) (bool, error)
@@ -20,8 +23,6 @@ type ClientGroup interface {
 	// GetComputerSystemMnemonic(fqdn string) (string, error)
 	// GetComputerSystemDomains(fqdn string) ([]*Relationship, error)
 	// GetComputerSystemGroups(fqdn string) ([]*Relationship, error)
-	// GetDomainSite(company, domain string) (string, error)
-	// GetComputerSystems(company string, queryFilters map[string]string) ([]*ConfigurationItem, error)
 	// RelateToCr(changeId, instanceId string) error
 }
 
@@ -29,8 +30,8 @@ type clientGroup struct {
 	client common.RemedyClientInterface
 }
 
-func NewClientGroup(client common.RemedyClientInterface) ClientGroup {
-	return &clientGroup{client: client}
+func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
+	return &clientGroup{client: client}, nil
 }
 
 func (cg *clientGroup) getPath() string {
@@ -42,7 +43,7 @@ func (cg *clientGroup) getPath() string {
 }
 
 func (cg *clientGroup) getConfigurationItems(urlPath string, params url.Values) ([]*ConfigurationItem, error) {
-	responses, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
+	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func (cg *clientGroup) getConfigurationItems(urlPath string, params url.Values) 
 }
 
 func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (*ConfigurationItem, error) {
-	responses, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
+	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +79,7 @@ func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (
 }
 
 func (cg *clientGroup) getRelationships(urlPath string, params url.Values) ([]*Relationship, error) {
-	responses, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
+	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
 	if err != nil {
 		return nil, err
 	}

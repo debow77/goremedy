@@ -1,13 +1,30 @@
 package ci
 
 type ConfigurationItem struct {
-	Name                 string `json:"name"`
-	Company              string `json:"company"`
-	Site                 string `json:"site"`
-	AssetLifeCycleStatus struct {
+	Name                   string `json:"name"`
+	Company                string `json:"company"`
+	Region                 string `json:"region"`
+	Site                   string `json:"site"`
+	Description            string `json:"description"`
+	ShortDescription       string `json:"shortDescription"`
+	Item                   string `json:"item"`
+	ManufacturerName       string `json:"manufacturerName"`
+	HostName               string `json:"hostName"`
+	Model                  string `json:"model"`
+	RoomRack               string `json:"roomRack"`
+	Type                   string `json:"type"`
+	Monitored              string `json:"monitored"`
+	OperatingSystem        string `json:"operatingSystem"`
+	OperatingSystemVersion string `json:"operatingSystemVersion"`
+	PrimaryIp              string `json:"primaryIp"`
+	PrimaryUsage           string `json:"primaryUsage"`
+	SecondaryUsage         string `json:"secondaryUsage"`
+	Domain                 string `json:"domain"`
+	AssetLifeCycleStatus   struct {
 		Value string `json:"value"`
 	} `json:"assetLifeCycleStatus"`
 	MarkAsDeleted string `json:"markAsDeleted"`
+	InstanceId    string `json:"instanceId"`
 	Status        *struct {
 		Value string `json:"value"`
 	} `json:"status,omitempty"`

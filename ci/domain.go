@@ -13,31 +13,32 @@ func (cg *clientGroup) GetDomains(company string) ([]*ConfigurationItem, error) 
 	return filterDomains(domains), nil
 }
 
-func (cg *clientGroup) DomainHasUsage(company, domain, usage string) (bool, error) {
-	params := url.Values{
-		"relationship.markAsDeleted":   {"No"},
-		"source.name":                  {domain},
-		"source.company":               {company},
-		"destination.primaryUsageLike": {usage},
-	}
-	relationships, err := cg.getRelationships("assets/-/relationships", params)
-	if err != nil {
-		return false, err
-	}
-	return len(relationships) > 0, nil
-}
+// TODO: validate and test
+// func (cg *clientGroup) DomainHasUsage(company, domain, usage string) (bool, error) {
+// 	params := url.Values{
+// 		"relationship.markAsDeleted":   {"No"},
+// 		"source.name":                  {domain},
+// 		"source.company":               {company},
+// 		"destination.primaryUsageLike": {usage},
+// 	}
+// 	relationships, err := cg.getRelationships("assets/-/relationships", params)
+// 	if err != nil {
+// 		return false, err
+// 	}
+// 	return len(relationships) > 0, nil
+// }
 
-func (cg *clientGroup) GetDomainSite(company, domain string) (string, error) {
-	params := url.Values{
-		"relationship.markAsDeleted": {"No"},
-		"source.classId":             {"BMC.CORE:CERN_DOMAIN"},
-		"source.company":             {company},
-		"source.name":                {domain},
-		"destination.hostNameExists": {"true"},
-	}
-	relationships, err := cg.getRelationships("assets/-/relationships", params)
-	if err != nil {
-		return "", err
-	}
-	return getMostCommonSite(relationships), nil
-}
+// func (cg *clientGroup) GetDomainSite(company, domain string) (string, error) {
+// 	params := url.Values{
+// 		"relationship.markAsDeleted": {"No"},
+// 		"source.classId":             {"BMC.CORE:CERN_DOMAIN"},
+// 		"source.company":             {company},
+// 		"source.name":                {domain},
+// 		"destination.hostNameExists": {"true"},
+// 	}
+// 	relationships, err := cg.getRelationships("assets/-/relationships", params)
+// 	if err != nil {
+// 		return "", err
+// 	}
+// 	return getMostCommonSite(relationships), nil
+// }
