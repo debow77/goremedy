@@ -8,12 +8,17 @@ import (
 func GetCompany() {
 	fmt.Println("\nGetCompany - Single Company usage example:")
 
-	config := goremedy.RemedyClientConfig{
-		LogLevel: "WARN", // Set log level to DEBUG
-	}
+	// config := goremedy.RemedyClientConfig{
+	// 	LogLevel: "WARN", // Set log level to WARN
+	// }
 
-	// remedyClient, err := goremedy.NewRemedyClient(goremedy.RemedyClientConfig{})
-	remedyClient, err := goremedy.NewRemedyClient(config)
+	// remedyClient, err := goremedy.NewRemedyClient(config)
+
+	// No custom config passed
+	remedyClient, err := goremedy.NewRemedyClient()
+
+	// Another way to set a diff LogLevel value
+	// remedyClient, err := goremedy.NewRemedyClient(goremedy.RemedyClientConfig{LogLevel: "ERROR"})
 
 	if err != nil {
 		fmt.Printf("Error creating RemedyClient: %v\n", err)

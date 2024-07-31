@@ -15,51 +15,13 @@ type RemedyClientInterface interface {
 	GetRapidClient() *gorapid.RapidClient
 }
 
+// PageResponse represents a paginated API response
+type PageResponse struct {
+	Content    []json.RawMessage `json:"content"`
+	TotalPages int               `json:"totalPages"`
+}
+
 // GetPaginated returns a list of items from a paginated API response
-// func GetPaginated(client RemedyClientInterface, basePath, urlPath string, params url.Values) ([]json.RawMessage, int, error) {
-// 	const pageSize = 1000
-// 	params.Set("size", fmt.Sprintf("%d", pageSize))
-// 	params.Set("page", "-1")
-
-// 	var allItems []json.RawMessage
-// 	totalPages := 1
-// 	var statusCode int
-
-// 	for page := 0; page < totalPages; page++ {
-// 		params.Set("page", fmt.Sprintf("%d", page))
-
-// 		resp, err := client.GetRapidClient().Get(basePath+urlPath, params)
-// 		fmt.Printf("resp to unmarshal API response: %v", resp.Status)
-// 		if err != nil {
-// 			return nil, 0, fmt.Errorf("failed to make API request: %v", err)
-// 		}
-
-// 		defer resp.Body.Close() // close the response body!
-
-// 		statusCode = resp.Status
-
-// 		var responseBody []byte
-// 		responseBody, err = io.ReadAll(resp.Body)
-// 		if err != nil {
-// 			return nil, 0, fmt.Errorf("failed to read response body: %v", err)
-// 		}
-
-// 		var pageResp struct {
-// 			Content    []json.RawMessage `json:"content"`
-// 			TotalPages int               `json:"totalPages"`
-// 		}
-
-// 		if err := json.Unmarshal(responseBody, &pageResp); err != nil {
-// 			return nil, 0, fmt.Errorf("failed to unmarshal API response: %v", err)
-// 		}
-
-// 		allItems = append(allItems, pageResp.Content...)
-// 		totalPages = pageResp.TotalPages
-// 	}
-
-// 	return allItems, statusCode, nil
-// }
-
 func GetPaginated(client RemedyClientInterface, basePath, urlPath string, params url.Values) ([]json.RawMessage, int, error) {
 	const pageSize = 1000
 	params.Set("size", fmt.Sprintf("%d", pageSize))
@@ -72,49 +34,50 @@ func GetPaginated(client RemedyClientInterface, basePath, urlPath string, params
 	for page := 0; page < totalPages; page++ {
 		params.Set("page", fmt.Sprintf("%d", page))
 
-		var retryCount int
-		for {
-			// Retry logic to account for random 429 errors
-			resp, err := client.GetRapidClient().Get(basePath+urlPath, params)
-			if err != nil {
-				if retryCount < 3 { // adjust the retry count as needed
-					retryCount++
-					time.Sleep(time.Duration(retryCount*500) * time.Millisecond) // exponential backoff
-					continue
-				}
-				return nil, 0, fmt.Errorf("failed to make API request: %v", err)
-			}
-
-			defer resp.Body.Close() // close the response body!
-
-			statusCode = resp.Status
-
-			if resp.Status == 429 {
-				retryCount++
-				time.Sleep(time.Duration(retryCount*500) * time.Millisecond) // exponential backoff
-				continue
-			}
-
-			var responseBody []byte
-			responseBody, err = io.ReadAll(resp.Body)
-			if err != nil {
-				return nil, 0, fmt.Errorf("failed to read response body: %v", err)
-			}
-
-			var pageResp struct {
-				Content    []json.RawMessage `json:"content"`
-				TotalPages int               `json:"totalPages"`
-			}
-
-			if err := json.Unmarshal(responseBody, &pageResp); err != nil {
-				return nil, 0, fmt.Errorf("failed to unmarshal API response: %v", err)
-			}
-
-			allItems = append(allItems, pageResp.Content...)
-			totalPages = pageResp.TotalPages
-			break
+		items, status, err := getPage(client, basePath, urlPath, params)
+		if err != nil {
+			return nil, status, err
 		}
+
+		statusCode = status
+		allItems = append(allItems, items.Content...)
+		totalPages = items.TotalPages
 	}
 
 	return allItems, statusCode, nil
+}
+
+// getPage retrieves a single page of results from the API
+func getPage(client RemedyClientInterface, basePath, urlPath string, params url.Values) (*PageResponse, int, error) {
+	var retryCount int
+	for {
+		resp, err := client.GetRapidClient().Get(basePath+urlPath, params)
+		if err != nil {
+			if retryCount < 3 {
+				retryCount++
+				time.Sleep(time.Duration(retryCount*500) * time.Millisecond)
+				continue
+			}
+			return nil, 0, fmt.Errorf("failed to make API request: %v", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.Status == 429 {
+			retryCount++
+			time.Sleep(time.Duration(retryCount*500) * time.Millisecond)
+			continue
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, resp.Status, fmt.Errorf("failed to read response body: %v", err)
+		}
+
+		var pageResp PageResponse
+		if err := json.Unmarshal(body, &pageResp); err != nil {
+			return nil, resp.Status, fmt.Errorf("failed to unmarshal API response: %v", err)
+		}
+
+		return &pageResp, resp.Status, nil
+	}
 }

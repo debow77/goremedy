@@ -6,14 +6,17 @@ import (
 	"unicode"
 )
 
+// GetComputerSystemByFqdn retrieves a computer system by its FQDN
 func (cg *clientGroup) GetComputerSystemByFqdn(fqdn string) (*ConfigurationItem, error) {
 	return cg.getConfigurationItem("computer-systems", url.Values{"hostName": {fqdn}})
 }
 
+// GetComputerSystemById retrieves a computer system by its ID
 func (cg *clientGroup) GetComputerSystemById(id string) (*ConfigurationItem, error) {
 	return cg.getConfigurationItem("computer-systems", url.Values{"instanceId": {id}})
 }
 
+// ComputerSystemIsDeployed checks if a computer system is deployed
 func (cg *clientGroup) ComputerSystemIsDeployed(fqdn string) (bool, error) {
 	ci, err := cg.GetComputerSystemByFqdn(fqdn)
 	if err != nil {
@@ -25,11 +28,8 @@ func (cg *clientGroup) ComputerSystemIsDeployed(fqdn string) (bool, error) {
 	return ci.Status.Value == "Deployed", nil
 }
 
+// GetComputerSystems retrieves computer systems based on company and filters
 func (cg *clientGroup) GetComputerSystems(company string, queryFilters ...map[string]string) ([]*Relationship, error) {
-	if len(queryFilters) == 0 {
-		queryFilters = []map[string]string{{}} // default to an empty filter map
-	}
-
 	params := url.Values{
 		"relationship.markAsDeleted": {"No"},
 		"source.classId":             {"BMC.CORE:CERN_DOMAIN"},
@@ -37,9 +37,24 @@ func (cg *clientGroup) GetComputerSystems(company string, queryFilters ...map[st
 		"destination.hostNameExists": {"true"},
 	}
 
-	retryFields := []string{"domain", "os", "fqdn", "usage", "notUsage"}
+	if len(queryFilters) > 0 {
+		applyQueryFilters(params, queryFilters[0])
+	}
 
-	for key, value := range queryFilters[0] {
+	computerSystems, err := cg.getRelationships("assets/-/relationships", params)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(computerSystems) == 0 {
+		return cg.retryWithCaseVariations(company, queryFilters...)
+	}
+
+	return computerSystems, nil
+}
+
+func applyQueryFilters(params url.Values, filters map[string]string) {
+	for key, value := range filters {
 		switch key {
 		case "domain":
 			params.Set("source.name", value)
@@ -53,43 +68,48 @@ func (cg *clientGroup) GetComputerSystems(company string, queryFilters ...map[st
 			params.Set("destination.primaryUsageNotIn", value)
 		}
 	}
+}
 
-	computerSystems, err := cg.getRelationships("assets/-/relationships", params)
-	if err != nil {
-		return nil, err
-	}
+func (cg *clientGroup) retryWithCaseVariations(company string, queryFilters ...map[string]string) ([]*Relationship, error) {
+	retryFields := []string{"domain", "os", "fqdn", "usage", "notUsage"}
 
-	if len(computerSystems) == 0 {
-		// Retry logic for each field
-		for _, field := range retryFields {
-			if value, ok := queryFilters[0][field]; ok {
-				// Try with first character uppercase
-				params.Set(getParamKey(field), capitalizeFirstLetter(value))
-				computerSystems, err = cg.getRelationships("assets/-/relationships", params)
-				if err != nil {
-					return nil, err
-				}
-				if len(computerSystems) > 0 {
-					return computerSystems, nil
-				}
+	for _, field := range retryFields {
+		if value, ok := queryFilters[0][field]; ok {
+			params := buildRetryParams(company, field, value)
 
-				// Try with all characters uppercase
-				params.Set(getParamKey(field), strings.ToUpper(value))
-				computerSystems, err = cg.getRelationships("assets/-/relationships", params)
-				if err != nil {
-					return nil, err
-				}
-				if len(computerSystems) > 0 {
-					return computerSystems, nil
-				}
+			// Try with first character uppercase
+			computerSystems, err := cg.getRelationships("assets/-/relationships", params)
+			if err != nil {
+				return nil, err
+			}
+			if len(computerSystems) > 0 {
+				return computerSystems, nil
+			}
 
-				// Reset the parameter to original value
-				params.Set(getParamKey(field), value)
+			// Try with all characters uppercase
+			params.Set(getParamKey(field), strings.ToUpper(value))
+			computerSystems, err = cg.getRelationships("assets/-/relationships", params)
+			if err != nil {
+				return nil, err
+			}
+			if len(computerSystems) > 0 {
+				return computerSystems, nil
 			}
 		}
 	}
 
-	return computerSystems, nil
+	return nil, nil
+}
+
+func buildRetryParams(company, field, value string) url.Values {
+	params := url.Values{
+		"relationship.markAsDeleted": {"No"},
+		"source.classId":             {"BMC.CORE:CERN_DOMAIN"},
+		"source.company":             {company},
+		"destination.hostNameExists": {"true"},
+	}
+	params.Set(getParamKey(field), capitalizeFirstLetter(value))
+	return params
 }
 
 func capitalizeFirstLetter(s string) string {
@@ -116,20 +136,3 @@ func getParamKey(field string) string {
 		return ""
 	}
 }
-
-// if len(relationships) > 0 {
-// 	fmt.Printf("First relationship: %+v\n", relationships[0])
-// }
-// if len(relationships) > 0 {
-// 	rel := relationships[0]
-// 	log.Printf("First relationship: Source=%+v, Destination=%+v", *rel.Source, *rel.Destination)
-// }
-// panic("here")
-// var computerSystems []*ConfigurationItem
-// var computerSystems []*ConfigurationItem
-
-// for _, rel := range relationships {
-// 	if rel.Destination != nil {
-// 		computerSystems = append(computerSystems, rel.Destination)
-// 	}
-// }

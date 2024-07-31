@@ -8,28 +8,20 @@ import (
 	"strings"
 )
 
+// ClientGroup interface defines the methods for CI operations
 type ClientGroup interface {
 	GetDomains(company string) ([]*ConfigurationItem, error)
 	GetComputerSystemByFqdn(fqdn string) (*ConfigurationItem, error)
 	GetComputerSystemById(id string) (*ConfigurationItem, error)
 	ComputerSystemIsDeployed(fqdn string) (bool, error)
 	GetComputerSystems(company string, queryFilters ...map[string]string) ([]*Relationship, error)
-
-	// TODO: Complete the rest of the CI endpoints
-	// GetBusinessServices(company, name string) ([]*ConfigurationItem, error)
-	// GetBusinessServiceByName(company, name string) (*ConfigurationItem, error)
-	// DomainHasUsage(company, domain, usage string) (bool, error)
-	// GetComputerSystemCompany(fqdn string) (string, error)
-	// GetComputerSystemMnemonic(fqdn string) (string, error)
-	// GetComputerSystemDomains(fqdn string) ([]*Relationship, error)
-	// GetComputerSystemGroups(fqdn string) ([]*Relationship, error)
-	// RelateToCr(changeId, instanceId string) error
 }
 
 type clientGroup struct {
 	client common.RemedyClientInterface
 }
 
+// NewClientGroup creates a new CI client group
 func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
 	return &clientGroup{client: client}, nil
 }
@@ -45,14 +37,14 @@ func (cg *clientGroup) getPath() string {
 func (cg *clientGroup) getConfigurationItems(urlPath string, params url.Values) ([]*ConfigurationItem, error) {
 	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get configuration items: %w", err)
 	}
 
 	var configItems []*ConfigurationItem
 	for _, resp := range responses {
 		var ci ConfigurationItem
 		if err := json.Unmarshal(resp, &ci); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal configuration item: %v", err)
+			return nil, fmt.Errorf("failed to unmarshal configuration item: %w", err)
 		}
 		configItems = append(configItems, &ci)
 	}
@@ -63,7 +55,7 @@ func (cg *clientGroup) getConfigurationItems(urlPath string, params url.Values) 
 func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (*ConfigurationItem, error) {
 	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get configuration item: %w", err)
 	}
 
 	if len(responses) == 0 {
@@ -72,7 +64,7 @@ func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (
 
 	var ci ConfigurationItem
 	if err := json.Unmarshal(responses[0], &ci); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal configuration item: %v", err)
+		return nil, fmt.Errorf("failed to unmarshal configuration item: %w", err)
 	}
 
 	return &ci, nil
@@ -81,14 +73,14 @@ func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (
 func (cg *clientGroup) getRelationships(urlPath string, params url.Values) ([]*Relationship, error) {
 	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get relationships: %w", err)
 	}
 
 	var relationships []*Relationship
 	for _, resp := range responses {
 		var rel Relationship
 		if err := json.Unmarshal(resp, &rel); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal relationship: %v", err)
+			return nil, fmt.Errorf("failed to unmarshal relationship: %w", err)
 		}
 		relationships = append(relationships, &rel)
 	}

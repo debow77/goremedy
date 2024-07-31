@@ -2,6 +2,7 @@ package goremedy
 
 import (
 	"log/slog"
+	"os"
 
 	"goremedy/ci"
 	"goremedy/company"
@@ -11,86 +12,87 @@ import (
 
 // RemedyClientInterface defines the interface for a Remedy client
 type RemedyClientInterface interface {
-	// GetRapidClient returns the Rapid client instance
 	GetRapidClient() *gorapid.RapidClient
-	// GetCompanyClientGroup returns the company client group instance
 	GetCompanyClientGroup() company.ClientGroup
-	// GetCIClientGroup returns the CI client group instance
 	GetCIClientGroup() ci.ClientGroup
 }
 
 // RemedyClient represents a Remedy client
 type RemedyClient struct {
-	// rapidClient is the Rapid client instance
-	rapidClient *gorapid.RapidClient
-	// companyClientGroup is the company client group instance
+	rapidClient        *gorapid.RapidClient
 	companyClientGroup company.ClientGroup
-	// ciClientGroup is the CI client group instance
-	ciClientGroup ci.ClientGroup
+	ciClientGroup      ci.ClientGroup
+	config             *RemedyClientConfig
 }
 
 // RemedyClientConfig defines the configuration for a Remedy client
 type RemedyClientConfig struct {
-	// LogLevel specifies the log level for the client
 	LogLevel string
 }
 
-func init() {
-	// Initialize the log level to INFO
-	config := RemedyClientConfig{
-		LogLevel: "INFO",
-	}
-	setLogLevel(config)
-}
-
-// setLogLevel sets the log level based on the config, can override from calling modules/packages
-func setLogLevel(config RemedyClientConfig) {
-	switch config.LogLevel {
-	case "DEBUG":
-		// slog.SetDefault(slog.LevelDebug)
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-		slog.Debug("Log level debug")
-	case "INFO":
-		slog.SetLogLoggerLevel(slog.LevelDebug)
-	case "WARN":
-		slog.SetLogLoggerLevel(slog.LevelWarn)
-		slog.Warn("Log level warn")
-	case "ERROR":
-		slog.SetLogLoggerLevel(slog.LevelError)
-		slog.Error("Log level error")
-	default:
-		slog.SetLogLoggerLevel(slog.LevelInfo)
-	}
+// logLevels maps string log levels to slog.Level values
+var logLevels = map[string]slog.Level{
+	"DEBUG": slog.LevelDebug,
+	"INFO":  slog.LevelInfo,
+	"WARN":  slog.LevelWarn,
+	"ERROR": slog.LevelError,
 }
 
 // NewRemedyClient creates a new Remedy client instance
-func NewRemedyClient(config RemedyClientConfig) (*RemedyClient, error) {
-	// Set the log level based on the config
-	setLogLevel(config)
-	// Create a new Rapid client instance
+func NewRemedyClient(config ...RemedyClientConfig) (*RemedyClient, error) {
+	var cfg RemedyClientConfig
+	if len(config) > 0 {
+		cfg = config[0]
+	} else {
+		cfg = RemedyClientConfig{
+			LogLevel: "INFO", // default log level
+		}
+	}
+
+	setLogLevel(cfg)
+
 	rapidClient, err := gorapid.NewRapidClient()
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a new Remedy client instance
 	client := &RemedyClient{
 		rapidClient: rapidClient,
+		config:      &cfg,
 	}
 
-	// Create a new company client group instance
 	client.companyClientGroup, err = company.NewClientGroup(client)
 	if err != nil {
 		return nil, err
 	}
 
-	// Create a new CI client group instance
 	client.ciClientGroup, err = ci.NewClientGroup(client)
 	if err != nil {
 		return nil, err
 	}
 
 	return client, nil
+}
+
+// setLogLevel sets the log level based on the config
+func setLogLevel(config RemedyClientConfig) {
+	level, ok := logLevels[config.LogLevel]
+	if !ok {
+		level = slog.LevelInfo // Default to INFO if invalid level provided
+	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	slog.SetDefault(logger)
+
+	if config.LogLevel != "INFO" {
+		if config.LogLevel == "WARN" {
+			slog.Warn("Log level set", "level", config.LogLevel)
+		} else if config.LogLevel == "ERROR" {
+			slog.Error("Log level set", "level", config.LogLevel)
+		} else if config.LogLevel == "DEBUG" {
+			slog.Debug("Log level set", "level", config.LogLevel)
+		}
+	}
 }
 
 // GetRapidClient returns the Rapid client instance

@@ -1,5 +1,6 @@
 package ci
 
+// ConfigurationItem represents a configuration item in the system
 type ConfigurationItem struct {
 	Name                   string `json:"name"`
 	Company                string `json:"company"`
@@ -30,11 +31,13 @@ type ConfigurationItem struct {
 	} `json:"status,omitempty"`
 }
 
+// Relationship represents a relationship between configuration items
 type Relationship struct {
 	Source      *ConfigurationItem `json:"source"`
 	Destination *ConfigurationItem `json:"destination"`
 }
 
+// InvalidDomainNames is a list of domain names that should be filtered out
 var InvalidDomainNames = []string{
 	"PMO Reclaim",
 	"PMO Reclaims",
@@ -42,6 +45,7 @@ var InvalidDomainNames = []string{
 	"Unallocated",
 }
 
+// filterDomains removes invalid domains from the list
 func filterDomains(domains []*ConfigurationItem) []*ConfigurationItem {
 	var filteredDomains []*ConfigurationItem
 	for _, domain := range domains {
@@ -54,6 +58,7 @@ func filterDomains(domains []*ConfigurationItem) []*ConfigurationItem {
 	return filteredDomains
 }
 
+// contains checks if a string is present in a slice
 func contains(slice []string, str string) bool {
 	for _, v := range slice {
 		if v == str {
@@ -63,24 +68,34 @@ func contains(slice []string, str string) bool {
 	return false
 }
 
+// getMostCommonCompany returns the most common company from relationships
 func getMostCommonCompany(relationships []*Relationship) string {
+	return getMaxKey(countCompanies(relationships))
+}
+
+// getMostCommonSite returns the most common site from relationships
+func getMostCommonSite(relationships []*Relationship) string {
+	return getMaxKey(countSites(relationships))
+}
+
+func countCompanies(relationships []*Relationship) map[string]int {
 	companyCounts := make(map[string]int)
 	for _, rel := range relationships {
 		if rel.Source != nil && rel.Source.Company != "" {
 			companyCounts[rel.Source.Company]++
 		}
 	}
-	return getMaxKey(companyCounts)
+	return companyCounts
 }
 
-func getMostCommonSite(relationships []*Relationship) string {
+func countSites(relationships []*Relationship) map[string]int {
 	siteCounts := make(map[string]int)
 	for _, rel := range relationships {
 		if rel.Destination != nil && rel.Destination.Site != "" {
 			siteCounts[rel.Destination.Site]++
 		}
 	}
-	return getMaxKey(siteCounts)
+	return siteCounts
 }
 
 func getMaxKey(m map[string]int) string {

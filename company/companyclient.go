@@ -30,13 +30,10 @@ type Company struct {
 
 // ClientGroup is an interface for a company client group
 type ClientGroup interface {
-	// GetCompany returns a list of companies by mnemonic
 	GetCompany(mnemonics []string) ([]*Company, int, error)
-	// GetCernerworks returns a list of Cernerworks companies by mnemonic
 	GetCernerworks(mnemonics []string) ([]*Company, int, error)
 }
 
-// clientGroup represents a company client group
 type clientGroup struct {
 	client       common.RemedyClientInterface
 	companyQuery *queryClient
@@ -50,17 +47,15 @@ func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
 	}, nil
 }
 
-// queryClient represents a query client for company data
 type queryClient struct {
 	client common.RemedyClientInterface
 }
 
-// newQueryClient creates a new query client instance
 func newQueryClient(client common.RemedyClientInterface) *queryClient {
 	return &queryClient{client: client}
 }
 
-// func (cg *clientGroup) GetCompany(mnemonics []string) ([]*Company, error) {
+// GetCompany returns a list of companies by mnemonic
 func (cg *clientGroup) GetCompany(mnemonics []string) ([]*Company, int, error) {
 	return cg.companyQuery.getClientCompanies(mnemonics, nil)
 }
@@ -71,7 +66,6 @@ func (cg *clientGroup) GetCernerworks(mnemonics []string) ([]*Company, int, erro
 	return cg.companyQuery.getClientCompanies(mnemonics, filters)
 }
 
-// func (qc *queryClient) getClientCompanies(mnemonics []string, filters map[string]string) ([]*Company, error) {
 // getClientCompanies returns a list of companies by mnemonic and filters
 func (qc *queryClient) getClientCompanies(mnemonics []string, filters map[string]string) ([]*Company, int, error) {
 	params := url.Values{
@@ -88,19 +82,18 @@ func (qc *queryClient) getClientCompanies(mnemonics []string, filters map[string
 
 // getPaginated returns a list of companies by URL path, params, and filters
 func (qc *queryClient) getPaginated(urlPath string, params url.Values, filters map[string]string) ([]*Company, int, error) {
-	slog.Debug("Getting companies with params: %v and filters: %v", fmt.Sprintf("%+v", params), fmt.Sprintf("%+v", filters))
+	slog.Debug("Getting companies", "params", params, "filters", filters)
 
-	// resp, statusCode, err := common.GetPaginated(qc.client, qc.getPath(), urlPath, params)
 	resp, statusCode, err := common.GetPaginated(qc.client, qc.getPath(), urlPath, params)
 	if err != nil {
-		return nil, 0, err
+		return nil, statusCode, err
 	}
 
 	var companies []*Company
 	for _, raw := range resp {
 		var company Company
 		if err := json.Unmarshal(raw, &company); err != nil {
-			return nil, 0, fmt.Errorf("failed to unmarshal company: %v", err)
+			return nil, statusCode, fmt.Errorf("failed to unmarshal company: %w", err)
 		}
 		if qc.matchesFilters(&company, filters) {
 			companies = append(companies, &company)
@@ -122,7 +115,6 @@ func (qc *queryClient) matchesFilters(company *Company, filters map[string]strin
 			if !strings.Contains(company.Name, value) {
 				return false
 			}
-			// Add more cases as needed for other filter types
 		}
 	}
 	return true

@@ -1,38 +1,77 @@
-`	// GetComputerSystemById(id string) (*ConfigurationItem, error)
-	// ComputerSystemIsDeployed(fqdn string) (bool, error)
-	// GetBusinessServices(company, name string) ([]*ConfigurationItem, error)
-	// GetBusinessServiceByName(company, name string) (*ConfigurationItem, error)
-	// DomainHasUsage(company, domain, usage string) (bool, error)
-	// GetComputerSystemCompany(fqdn string) (string, error)
-	// GetComputerSystemMnemonic(fqdn string) (string, error)
-	// GetComputerSystemDomains(fqdn string) ([]*Relationship, error)
-	// GetComputerSystemGroups(fqdn string) ([]*Relationship, error)
-	// GetDomainSite(company, domain string) (string, error)
-	// GetComputerSystems(company string, queryFilters map[string]string) ([]*ConfigurationItem, error)
-	// RelateToCr(changeId, instanceId string) error
+# goremedy
+
+RemedyClient
+===========
+
+A Go client for interacting with the Remedy API through Rapid.
+
+Installation
+------------
+
+To install the RemedyClient package, run the following command:
+
+```bash
+go get github.cerner.com/OHAIFedAutoSre/goremedy
+```
+
+Usage
+-----
+Authentication for Remedy endpoints in managed through the gorapid package. See [Creating a RapidClient instance](https://github.cerner.com/OHAIFedAutoSre/gorapid#creating-a-rapidclient-instance)
+
+```bash
+# Using the default loglevel
+client, err := goremedy.NewRemedyClient()
 
 
-	## Running the examples
+# Setting loglevel to DEBUG
+client, err := goremedy.NewRemedyClient(goremedy.RemedyClientConfig{LogLevel: "DEBUG",})
+```
 
-	```bash
-		# From the root of the goremedy folder
-		$ go run examples/main.go -example=getcompany1
-		Single Company usage example:
-		2024/07/29 09:21:56 WARN Log level warn
-		Status code: 200
-		Found 1 companies
-		Company found:
-			CompanyId: CPY000000139896
-			RemedyCompanyId: 0510
-			Name: CernerWorks Technology Improvement
-			Region: Internal
-			Company: CERN_CWIM-CernerWorks Technology Improvement
-			Mnemonic: CERN_CWIM
-			FocusClient: 
-			CompanyType: Customer
-			ProdDataCenter: CTC-LS-III
-			DrDataCenter: CTC-KC-I
-			Status: 1
-			Created Date: 0001-01-01 00:00:00 +0000 UTC
-			Modified Date: 0001-01-01 00:00:00 +0000 UTC
-	```
+TODO - Complete usage
+
+
+Making API requests
+-----
+TODO
+
+Contributing
+-----
+Contributions are welcome! Please open a pull request or issue on GitHub to contribute to the RemedyClient package.
+
+Acknowledgments
+-----
+The RemedyClient package was inspired by the https://github.cerner.com/CWxAutomation/php_remedy.
+
+Running the examples
+-----
+
+Running a single example, you can see the example paths in examples/main.go
+
+```bash
+$ go run examples/main.go -example=getcompany1
+
+GetCompany - Single Company usage example:
+Status code: 200
+Found 1 companies
+Company found:
+  CompanyId: CPY000000139896
+  RemedyCompanyId: 0510
+  Name: CernerWorks Technology Improvement
+  Region: Internal
+  Company: CERN_CWIM-CernerWorks Technology Improvement
+  Mnemonic: CERN_CWIM
+  FocusClient:
+  CompanyType: Customer
+  ProdDataCenter: CTC-LS-III
+  DrDataCenter: CTC-KC-I
+  Status: 1
+  Created Date: 0001-01-01 00:00:00 +0000 UTC
+  Modified Date: 0001-01-01 00:00:00 +0000 UTC
+```
+
+Running all examples listed in examples/main.go
+
+```bash
+go run examples/main.go
+```
+
