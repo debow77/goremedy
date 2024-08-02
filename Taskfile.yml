@@ -1,0 +1,49 @@
+---
+version: '3'
+
+vars:
+  BIN_NAME: goremedy
+  VERSION: 1.0.0
+  BUILD: '{{ default "x" .BUILD_NUMBER }}'
+  BINARY_SUFFIX:
+    sh: |
+      case "$(uname)" in
+        Linux*) echo "" ;;
+        Darwin)
+          case "$(uname -m)" in
+            arm64) echo "_arm64.pkg" ;;
+            x86_64) echo "_amd64.pkg" ;;
+            *) echo "" ;;
+          esac
+          ;;
+        CYGWIN* | MINGW* | MSYS*) echo ".exe" ;;
+        *) echo "" ;;
+      esac
+
+tasks:
+  get:
+    cmds:
+      - GOPRIVATE=github.cerner.com go get github.cerner.com/OHAIFedAutoSre/gorapid
+  version:
+    cmds:
+      - sed -i 's/MANAGED BY BUILDS/{{ .VERSION }}-{{ .BUILD }}/' version.go
+  run:
+    deps: [build]
+    cmds:
+      - examples/main.go
+      - task: reset-version
+  test:
+    deps: [run]
+    cmds:
+      - go test ./...
+  reset-version:
+    cmds:
+      - cp version_default version.go
+  clean:
+    deps: [reset-version]
+    cmds:
+      - rm -f bins/*
+  all:
+    deps: [test, clean, reset-version]
+    cmds:
+      - echo "Test and clean complete"

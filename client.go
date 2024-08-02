@@ -6,6 +6,7 @@ import (
 
 	"goremedy/ci"
 	"goremedy/company"
+	"goremedy/crq"
 
 	"github.cerner.com/OHAIFedAutoSre/gorapid"
 )
@@ -15,6 +16,7 @@ type RemedyClientInterface interface {
 	GetRapidClient() *gorapid.RapidClient
 	GetCompanyClientGroup() company.ClientGroup
 	GetCIClientGroup() ci.ClientGroup
+	GetCRQClientGroup() crq.ClientGroup
 }
 
 // RemedyClient represents a Remedy client
@@ -22,7 +24,9 @@ type RemedyClient struct {
 	rapidClient        *gorapid.RapidClient
 	companyClientGroup company.ClientGroup
 	ciClientGroup      ci.ClientGroup
-	config             *RemedyClientConfig
+	crqClientGroup     crq.ClientGroup
+
+	config *RemedyClientConfig
 }
 
 // RemedyClientConfig defines the configuration for a Remedy client
@@ -71,6 +75,11 @@ func NewRemedyClient(config ...RemedyClientConfig) (*RemedyClient, error) {
 		return nil, err
 	}
 
+	client.crqClientGroup, err = crq.NewClientGroup(client)
+	if err != nil {
+		return nil, err
+	}
+
 	return client, nil
 }
 
@@ -108,4 +117,9 @@ func (rc *RemedyClient) GetCompanyClientGroup() company.ClientGroup {
 // GetCIClientGroup returns the CI client group instance
 func (rc *RemedyClient) GetCIClientGroup() ci.ClientGroup {
 	return rc.ciClientGroup
+}
+
+// GetCRQClientGroup returns the CRQ client group instance for interacting with Change Request Information
+func (rc *RemedyClient) GetCRQClientGroup() crq.ClientGroup {
+	return rc.crqClientGroup
 }
