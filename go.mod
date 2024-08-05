@@ -1,7 +1,5 @@
 module goremedy
 
-go 1.22.1
+go 1.22.3
 
-require github.cerner.com/OHAIFedAutoSre/gorapid v0.0.0
-
-replace github.cerner.com/OHAIFedAutoSre/gorapid => ../gorapid
+require github.cerner.com/OHAIFedAutoSre/gorapid v1.0.0

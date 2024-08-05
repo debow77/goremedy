@@ -3,12 +3,11 @@ package company
 import (
 	"encoding/json"
 	"fmt"
+	"goremedy/interfaces"
 	"log/slog"
 	"net/url"
 	"strings"
 	"time"
-
-	"goremedy/internal/common"
 )
 
 // Company represents a company entity
@@ -35,12 +34,12 @@ type ClientGroup interface {
 }
 
 type clientGroup struct {
-	client       common.RemedyClientInterface
+	client       interfaces.RapidClientInterface
 	companyQuery *queryClient
 }
 
 // NewClientGroup creates a new company client group instance
-func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
+func NewClientGroup(client interfaces.RapidClientInterface) (ClientGroup, error) {
 	return &clientGroup{
 		client:       client,
 		companyQuery: newQueryClient(client),
@@ -48,10 +47,10 @@ func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
 }
 
 type queryClient struct {
-	client common.RemedyClientInterface
+	client interfaces.RapidClientInterface
 }
 
-func newQueryClient(client common.RemedyClientInterface) *queryClient {
+func newQueryClient(client interfaces.RapidClientInterface) *queryClient {
 	return &queryClient{client: client}
 }
 
@@ -84,7 +83,7 @@ func (qc *queryClient) getClientCompanies(mnemonics []string, filters map[string
 func (qc *queryClient) getPaginated(urlPath string, params url.Values, filters map[string]string) ([]*Company, int, error) {
 	slog.Debug("Getting companies", "params", params, "filters", filters)
 
-	resp, statusCode, err := common.GetPaginated(qc.client, qc.getPath(), urlPath, params)
+	resp, statusCode, err := qc.client.GetPaginated(qc.getPath(), urlPath, params)
 	if err != nil {
 		return nil, statusCode, err
 	}

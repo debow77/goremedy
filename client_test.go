@@ -48,6 +48,9 @@ func TestNewRemedyClient(t *testing.T) {
 				if client.GetCIClientGroup() == nil {
 					t.Errorf("Expected CIClientGroup to be non-nil")
 				}
+				if client.GetCRQClientGroup() == nil {
+					t.Errorf("Expected CIClientGroup to be non-nil")
+				}
 			}
 		})
 	}

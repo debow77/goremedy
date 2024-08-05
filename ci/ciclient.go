@@ -3,7 +3,7 @@ package ci
 import (
 	"encoding/json"
 	"fmt"
-	"goremedy/internal/common"
+	"goremedy/interfaces"
 	"net/url"
 	"strings"
 )
@@ -18,24 +18,23 @@ type ClientGroup interface {
 }
 
 type clientGroup struct {
-	client common.RemedyClientInterface
+	client interfaces.RapidClientInterface
 }
 
 // NewClientGroup creates a new CI client group
-func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
+func NewClientGroup(client interfaces.RapidClientInterface) (ClientGroup, error) {
 	return &clientGroup{client: client}, nil
 }
 
 func (cg *clientGroup) getPath() string {
-	rapidClient := cg.client.GetRapidClient()
-	if strings.Contains(strings.ToLower(rapidClient.BaseURL), "staging") {
+	if strings.Contains(strings.ToLower(cg.client.BaseURL()), "staging") {
 		return "remedy-asset-query-svc/v5/"
 	}
 	return "remedy-asset-query-svc/v1/"
 }
 
 func (cg *clientGroup) getConfigurationItems(urlPath string, params url.Values) ([]*ConfigurationItem, error) {
-	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
+	responses, _, err := cg.client.GetPaginated(cg.getPath(), urlPath, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get configuration items: %w", err)
 	}
@@ -53,7 +52,7 @@ func (cg *clientGroup) getConfigurationItems(urlPath string, params url.Values) 
 }
 
 func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (*ConfigurationItem, error) {
-	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
+	responses, _, err := cg.client.GetPaginated(cg.getPath(), urlPath, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get configuration item: %w", err)
 	}
@@ -71,7 +70,7 @@ func (cg *clientGroup) getConfigurationItem(urlPath string, params url.Values) (
 }
 
 func (cg *clientGroup) getRelationships(urlPath string, params url.Values) ([]*Relationship, error) {
-	responses, _, err := common.GetPaginated(cg.client, cg.getPath(), urlPath, params)
+	responses, _, err := cg.client.GetPaginated(cg.getPath(), urlPath, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get relationships: %w", err)
 	}

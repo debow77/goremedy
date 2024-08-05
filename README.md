@@ -48,7 +48,7 @@ Running the examples
 Running a single example, you can see the example paths in examples/main.go
 
 ```bash
-$ go run examples/main.go -example=getcompany1
+$ task run -- getcompany1
 
 GetCompany - Single Company usage example:
 Status code: 200
@@ -72,6 +72,6 @@ Company found:
 Running all examples listed in examples/main.go
 
 ```bash
-go run examples/main.go
+task run
 ```
 

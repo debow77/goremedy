@@ -1,32 +1,23 @@
 package goremedy
 
 import (
-	"log/slog"
-	"os"
-
+	"encoding/json"
 	"goremedy/ci"
 	"goremedy/company"
 	"goremedy/crq"
-
-	"github.cerner.com/OHAIFedAutoSre/gorapid"
+	"goremedy/interfaces"
+	"log/slog"
+	"net/url"
+	"os"
 )
-
-// RemedyClientInterface defines the interface for a Remedy client
-type RemedyClientInterface interface {
-	GetRapidClient() *gorapid.RapidClient
-	GetCompanyClientGroup() company.ClientGroup
-	GetCIClientGroup() ci.ClientGroup
-	GetCRQClientGroup() crq.ClientGroup
-}
 
 // RemedyClient represents a Remedy client
 type RemedyClient struct {
-	rapidClient        *gorapid.RapidClient
+	rapidClient        interfaces.RapidClientInterface
 	companyClientGroup company.ClientGroup
 	ciClientGroup      ci.ClientGroup
 	crqClientGroup     crq.ClientGroup
-
-	config *RemedyClientConfig
+	config             *RemedyClientConfig
 }
 
 // RemedyClientConfig defines the configuration for a Remedy client
@@ -55,13 +46,13 @@ func NewRemedyClient(config ...RemedyClientConfig) (*RemedyClient, error) {
 
 	setLogLevel(cfg)
 
-	rapidClient, err := gorapid.NewRapidClient()
+	rapidClientInterface, err := interfaces.NewRapidClient()
 	if err != nil {
 		return nil, err
 	}
 
 	client := &RemedyClient{
-		rapidClient: rapidClient,
+		rapidClient: rapidClientInterface,
 		config:      &cfg,
 	}
 
@@ -105,8 +96,18 @@ func setLogLevel(config RemedyClientConfig) {
 }
 
 // GetRapidClient returns the Rapid client instance
-func (rc *RemedyClient) GetRapidClient() *gorapid.RapidClient {
-	return rc.rapidClient
+func (rc *RemedyClient) GetRapidClient() interfaces.RapidClient {
+	return rc.rapidClient.GetRapidClient()
+}
+
+// BaseURL returns the interfaces base url instances for Rapid
+func (rc *RemedyClient) BaseURL() string {
+	return rc.rapidClient.BaseURL()
+}
+
+// GetPaginated returns the interfaces GetPaginated instances
+func (rc *RemedyClient) GetPaginated(basePath, urlPath string, params url.Values) ([]json.RawMessage, int, error) {
+	return rc.rapidClient.GetPaginated(basePath, urlPath, params)
 }
 
 // GetCompanyClientGroup returns the company client group instance
@@ -119,7 +120,7 @@ func (rc *RemedyClient) GetCIClientGroup() ci.ClientGroup {
 	return rc.ciClientGroup
 }
 
-// GetCRQClientGroup returns the CRQ client group instance for interacting with Change Request Information
+// GetCRQClientGroup returns the CRQ client group instance
 func (rc *RemedyClient) GetCRQClientGroup() crq.ClientGroup {
 	return rc.crqClientGroup
 }

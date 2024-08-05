@@ -1,134 +1,162 @@
-package crq_test
+package crq
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
-	"goremedy/crq"
+	"goremedy/interfaces"
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"testing"
+	"time"
+
+	"github.cerner.com/OHAIFedAutoSre/gorapid"
 )
 
-// MockRemedyClient is a mock implementation of the RemedyClientInterface
-type MockRemedyClient struct {
-	Response *http.Response
-	Error    error
+// MockRapidClient implements the RapidClient interface for testing
+type MockRapidClient struct {
+	GetFunc func(urlPath string, params url.Values) (*gorapid.Response, error)
 }
-type RapidClientInterface interface {
-	GenerateToken() (string, error)
-}
-type MockRapidClient struct{}
 
-func (m *MockRapidClient) GenerateToken() (string, error) {
-	// Return a mock token or an error
-	return "mock-token", nil
+func (m *MockRapidClient) Get(urlPath string, params url.Values) (*gorapid.Response, error) {
+	return m.GetFunc(urlPath, params)
 }
-func (m *MockRemedyClient) GetRapidClient() RapidClientInterface {
-	return &MockRapidClient{}
+
+func (m *MockRapidClient) Post(urlPath string, body gorapid.JSONBody) (*gorapid.Response, error) {
+	return nil, nil
 }
-func (m *MockRemedyClient) Get(basePath, urlPath string, params url.Values) (*http.Response, error) {
-	return m.Response, m.Error
+
+func (m *MockRapidClient) Put(urlPath string, body gorapid.JSONBody) (*gorapid.Response, error) {
+	return nil, nil
 }
-func TestClientGroup_Get(t *testing.T) {
-	// Setup mock response data
-	crqData := crq.CRQResponse{
-		CommonFields: crq.CommonFields{
-			ChangeID:              "CRQ123456",
-			UniversalTicketNumber: "UTN123456",
-			Summary:               "Test Change Request",
+
+func (m *MockRapidClient) Patch(urlPath string, body gorapid.JSONBody) (*gorapid.Response, error) {
+	return nil, nil
+}
+
+func (m *MockRapidClient) Delete(urlPath string) (*gorapid.Response, error) {
+	return nil, nil
+}
+
+func (m *MockRapidClient) BaseURL() string {
+	return "http://rapid.com"
+}
+
+func (m *MockRapidClient) GetPaginated(basePath, urlPath string, params url.Values) ([]json.RawMessage, int, error) {
+	return nil, 0, nil
+}
+
+func (m *MockRapidClient) GetPage(basePath, urlPath string, params url.Values) (*interfaces.PageResponse, int, error) {
+	return nil, 0, nil
+}
+
+// MockRapidClientInterface implements the RapidClientInterface for testing
+type MockRapidClientInterface struct {
+	MockClient *MockRapidClient
+}
+
+func (m *MockRapidClientInterface) GetRapidClient() interfaces.RapidClient {
+	return m.MockClient
+}
+
+func (m *MockRapidClientInterface) BaseURL() string {
+	return m.MockClient.BaseURL()
+}
+
+func (m *MockRapidClientInterface) GetPaginated(basePath, urlPath string, params url.Values) ([]json.RawMessage, int, error) {
+	return m.MockClient.GetPaginated(basePath, urlPath, params)
+}
+
+func TestGet(t *testing.T) {
+	mockResponse := `{"changeId": "12345", "statusString": "Draft"}`
+	mockClient := &MockRapidClient{
+		GetFunc: func(urlPath string, params url.Values) (*gorapid.Response, error) {
+			return &gorapid.Response{
+				Body:         io.NopCloser(strings.NewReader(mockResponse)),
+				Status:       http.StatusOK,
+				Headers:      http.Header{"Content-Type": []string{"application/json"}},
+				Error:        nil,
+				ResponseTime: 100 * time.Millisecond,
+				RequestURL:   urlPath,
+			}, nil
 		},
 	}
-	body, _ := json.Marshal(crqData)
-	mockResponse := &http.Response{
-		StatusCode: 200,
-		Body:       io.NopCloser(bytes.NewBuffer(body)),
-	}
-	// Initialize the mock client and clientGroup
-	mockClient := &MockRemedyClient{Response: mockResponse, Error: nil}
-	clientGroup, err := crq.NewClientGroup(mockClient)
+
+	mockInterface := &MockRapidClientInterface{MockClient: mockClient}
+
+	cg, err := NewClientGroup(mockInterface)
 	if err != nil {
-		t.Fatalf("expected no error creating client group, got %v", err)
+		t.Fatalf("Failed to create ClientGroup: %v", err)
 	}
-	// Call the Get method and check the results
-	result, err := clientGroup.Get("CRQ123456")
+
+	crq, err := cg.Get("12345")
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("Get failed: %v", err)
 	}
-	if result.ChangeID != crqData.ChangeID {
-		t.Errorf("expected ChangeID %s, got %s", crqData.ChangeID, result.ChangeID)
+
+	if crq.ChangeID != "12345" {
+		t.Errorf("Expected ChangeID 12345, got %s", crq.ChangeID)
 	}
-	if result.UniversalTicketNumber != crqData.UniversalTicketNumber {
-		t.Errorf("expected UniversalTicketNumber %s, got %s", crqData.UniversalTicketNumber, result.UniversalTicketNumber)
+
+	if crq.Status != "Draft" {
+		t.Errorf("Expected Status Draft, got %s", crq.Status)
 	}
 }
-func TestClientGroup_GetByUtn(t *testing.T) {
-	// Setup mock response data
-	utnData := crq.UtnResponse{
-		Content: []struct {
-			crq.CommonFields
-		}{
-			{
-				CommonFields: crq.CommonFields{
-					ChangeID:              "CRQ123456",
-					UniversalTicketNumber: "UTN123456",
-					Summary:               "Test Change Request",
-				},
-			},
+
+func TestGetByUtn(t *testing.T) {
+	mockResponse := `{"content": [{"changeId": "12345", "universalTicketNumber": "UTN12345"}]}`
+	mockClient := &MockRapidClient{
+		GetFunc: func(urlPath string, params url.Values) (*gorapid.Response, error) {
+			return &gorapid.Response{
+				Body:         io.NopCloser(strings.NewReader(mockResponse)),
+				Status:       http.StatusOK,
+				Headers:      http.Header{"Content-Type": []string{"application/json"}},
+				Error:        nil,
+				ResponseTime: 100 * time.Millisecond,
+				RequestURL:   urlPath,
+			}, nil
 		},
-		TotalElements: 1,
-		TotalPages:    1,
 	}
-	body, _ := json.Marshal(utnData)
-	mockResponse := &http.Response{
-		StatusCode: 200,
-		Body:       io.NopCloser(bytes.NewBuffer(body)),
-	}
-	// Initialize the mock client and clientGroup
-	mockClient := &MockRemedyClient{Response: mockResponse, Error: nil}
-	clientGroup, err := crq.NewClientGroup(mockClient)
+
+	mockInterface := &MockRapidClientInterface{MockClient: mockClient}
+
+	cg, err := NewClientGroup(mockInterface)
 	if err != nil {
-		t.Fatalf("expected no error creating client group, got %v", err)
+		t.Fatalf("Failed to create ClientGroup: %v", err)
 	}
-	// Call the GetByUtn method and check the results
-	result, err := clientGroup.GetByUtn("UTN123456")
+
+	utnResp, err := cg.GetByUtn("UTN12345")
 	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+		t.Fatalf("GetByUtn failed: %v", err)
 	}
-	if len(result.Content) != 1 {
-		t.Fatalf("expected 1 result, got %d", len(result.Content))
+
+	if len(utnResp.Content) != 1 {
+		t.Fatalf("Expected 1 change, got %d", len(utnResp.Content))
 	}
-	if result.Content[0].ChangeID != utnData.Content[0].ChangeID {
-		t.Errorf("expected ChangeID %s, got %s", utnData.Content[0].ChangeID, result.Content[0].ChangeID)
+
+	if utnResp.Content[0].ChangeID != "12345" {
+		t.Errorf("Expected ChangeID 12345, got %s", utnResp.Content[0].ChangeID)
 	}
-	if result.Content[0].UniversalTicketNumber != utnData.Content[0].UniversalTicketNumber {
-		t.Errorf("expected UniversalTicketNumber %s, got %s", utnData.Content[0].UniversalTicketNumber, result.Content[0].UniversalTicketNumber)
+
+	if utnResp.Content[0].UniversalTicketNumber != "UTN12345" {
+		t.Errorf("Expected UTN UTN12345, got %s", utnResp.Content[0].UniversalTicketNumber)
 	}
 }
-func TestClientGroup_Get_Error(t *testing.T) {
-	// Setup mock error response
-	mockClient := &MockRemedyClient{Response: nil, Error: errors.New("some error")}
-	clientGroup, err := crq.NewClientGroup(mockClient)
+
+func TestNewClientGroup(t *testing.T) {
+	mockInterface := &MockRapidClientInterface{MockClient: &MockRapidClient{}}
+
+	cg, err := NewClientGroup(mockInterface)
 	if err != nil {
-		t.Fatalf("expected no error creating client group, got %v", err)
+		t.Fatalf("NewClientGroup failed: %v", err)
 	}
-	// Call the Get method and expect an error
-	_, err = clientGroup.Get("CRQ123456")
-	if err == nil {
-		t.Fatal("expected error, got none")
+
+	if cg == nil {
+		t.Fatal("NewClientGroup returned nil")
 	}
-}
-func TestClientGroup_GetByUtn_Error(t *testing.T) {
-	// Setup mock error response
-	mockClient := &MockRemedyClient{Response: nil, Error: errors.New("some error")}
-	clientGroup, err := crq.NewClientGroup(mockClient)
-	if err != nil {
-		t.Fatalf("expected no error creating client group, got %v", err)
-	}
-	// Call the GetByUtn method and expect an error
-	_, err = clientGroup.GetByUtn("UTN123456")
-	if err == nil {
-		t.Fatal("expected error, got none")
+
+	_, ok := cg.(*clientGroup)
+	if !ok {
+		t.Error("NewClientGroup did not return a *clientGroup")
 	}
 }

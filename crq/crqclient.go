@@ -3,7 +3,7 @@ package crq
 import (
 	"encoding/json"
 	"fmt"
-	"goremedy/internal/common"
+	"goremedy/interfaces"
 	"io"
 	"log/slog"
 	"net/url"
@@ -19,12 +19,12 @@ type ClientGroup interface {
 }
 
 type clientGroup struct {
-	client   common.RemedyClientInterface
+	client   interfaces.RapidClientInterface
 	crQuery  *queryClient
 	crModify *modifyClient
 }
 
-func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
+func NewClientGroup(client interfaces.RapidClientInterface) (ClientGroup, error) {
 	return &clientGroup{
 		client:   client,
 		crQuery:  newQueryClient(client),
@@ -33,10 +33,10 @@ func NewClientGroup(client common.RemedyClientInterface) (ClientGroup, error) {
 }
 
 type queryClient struct {
-	client common.RemedyClientInterface
+	client interfaces.RapidClientInterface
 }
 
-func newQueryClient(client common.RemedyClientInterface) *queryClient {
+func newQueryClient(client interfaces.RapidClientInterface) *queryClient {
 	return &queryClient{client: client}
 }
 
@@ -44,8 +44,7 @@ func (qc *queryClient) get(changeID string) (*CRQResponse, error) {
 	urlPath := fmt.Sprintf("%s/changes/%s/all", changeQueryPath, changeID)
 	slog.Debug("Getting CRQ", "urlPath", urlPath)
 
-	rapidClient := qc.client.GetRapidClient()
-	resp, err := rapidClient.Get(urlPath, url.Values{})
+	resp, err := qc.client.GetRapidClient().Get(urlPath, url.Values{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CRQ: %w", err)
 	}
@@ -68,8 +67,7 @@ func (qc *queryClient) getByUtn(changeUtn string) (*UtnResponse, error) {
 
 	slog.Debug("Getting CRQ", "urlPath", urlPath, "params", params)
 
-	rapidClient := qc.client.GetRapidClient()
-	resp, err := rapidClient.Get(urlPath, params)
+	resp, err := qc.client.GetRapidClient().Get(urlPath, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get CRQ by UTN: %w", err)
 	}
@@ -93,9 +91,9 @@ func (cg *clientGroup) GetByUtn(changeUtn string) (*UtnResponse, error) {
 }
 
 type modifyClient struct {
-	client common.RemedyClientInterface
+	client interfaces.RapidClientInterface
 }
 
-func newModifyClient(client common.RemedyClientInterface) *modifyClient {
+func newModifyClient(client interfaces.RapidClientInterface) *modifyClient {
 	return &modifyClient{client: client}
 }

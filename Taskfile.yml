@@ -24,26 +24,14 @@ tasks:
   get:
     cmds:
       - GOPRIVATE=github.cerner.com go get github.cerner.com/OHAIFedAutoSre/gorapid
-  version:
-    cmds:
-      - sed -i 's/MANAGED BY BUILDS/{{ .VERSION }}-{{ .BUILD }}/' version.go
+      - go mod tidy
   run:
-    deps: [build]
     cmds:
-      - examples/main.go
-      - task: reset-version
+      - go run examples/main.go {{ if .CLI_ARGS }}-example={{ .CLI_ARGS }}{{ end }}
   test:
-    deps: [run]
     cmds:
       - go test ./...
-  reset-version:
-    cmds:
-      - cp version_default version.go
-  clean:
-    deps: [reset-version]
-    cmds:
-      - rm -f bins/*
   all:
-    deps: [test, clean, reset-version]
+    deps: [test]
     cmds:
       - echo "Test and clean complete"
