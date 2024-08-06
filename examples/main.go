@@ -6,6 +6,7 @@ import (
 	"goremedy/examples/ci"
 	"goremedy/examples/company"
 	"goremedy/examples/crq"
+	"goremedy/examples/inc"
 )
 
 func main() {
@@ -30,6 +31,8 @@ func main() {
 			ci.GetComputerSystems()
 		case "getcrq":
 			crq.GetCrq()
+		case "getinc":
+			inc.GetInc()
 		default:
 			fmt.Println("unknown example")
 		}
@@ -43,5 +46,6 @@ func main() {
 		ci.ComputerSystemIsDeployed()
 		ci.GetComputerSystems()
 		crq.GetCrq()
+		inc.GetInc()
 	}
 }

@@ -50,11 +50,11 @@ func (qc *queryClient) get(changeID string) (*CRQResponse, error) {
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read get CRQ response body: %w", err)
 	}
 	var crq CRQResponse
 	if err := json.Unmarshal(body, &crq); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal CRQ: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal CRQ response: %w", err)
 	}
 	return &crq, nil
 }
@@ -73,11 +73,11 @@ func (qc *queryClient) getByUtn(changeUtn string) (*UtnResponse, error) {
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read CRQ UTN response body: %w", err)
 	}
 	var response UtnResponse
 	if err := json.Unmarshal(body, &response); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal CRQ UTN response: %w", err)
 	}
 	return &response, nil
 }

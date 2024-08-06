@@ -5,6 +5,7 @@ import (
 	"goremedy/ci"
 	"goremedy/company"
 	"goremedy/crq"
+	"goremedy/inc"
 	"goremedy/interfaces"
 	"log/slog"
 	"net/url"
@@ -17,7 +18,9 @@ type RemedyClient struct {
 	companyClientGroup company.ClientGroup
 	ciClientGroup      ci.ClientGroup
 	crqClientGroup     crq.ClientGroup
-	config             *RemedyClientConfig
+	incClientGroup     inc.ClientGroup
+
+	config *RemedyClientConfig
 }
 
 // RemedyClientConfig defines the configuration for a Remedy client
@@ -67,6 +70,11 @@ func NewRemedyClient(config ...RemedyClientConfig) (*RemedyClient, error) {
 	}
 
 	client.crqClientGroup, err = crq.NewClientGroup(client)
+	if err != nil {
+		return nil, err
+	}
+
+	client.incClientGroup, err = inc.NewClientGroup(client)
 	if err != nil {
 		return nil, err
 	}
@@ -123,4 +131,9 @@ func (rc *RemedyClient) GetCIClientGroup() ci.ClientGroup {
 // GetCRQClientGroup returns the CRQ client group instance
 func (rc *RemedyClient) GetCRQClientGroup() crq.ClientGroup {
 	return rc.crqClientGroup
+}
+
+// GetINCClientGroup returns the INC client group instance
+func (rc *RemedyClient) GetINCClientGroup() inc.ClientGroup {
+	return rc.incClientGroup
 }
